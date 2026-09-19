@@ -1,0 +1,39 @@
+<div id="sync_status">
+  <div class="flex items-center justify-between mb-6 gap-3 flex-wrap">
+    <h1 class="text-2xl font-bold text-navy">Users</h1>
+    <div class="flex gap-3">
+      <%= button_to "↻ Sync from Tito", sync_admin_users_path, method: :post, class: "btn btn-navy",
+            disabled: status && status[:state] == :running,
+            data: { turbo_submits_with: "Starting…" } %>
+      <%= link_to "Add user", new_admin_user_path, class: "btn btn-red" %>
+    </div>
+  </div>
+
+  <% if status.present? %>
+    <% case status[:state]
+       when :running %>
+      <div class="rounded-lg border border-amber-300 bg-amber-50 text-amber-900 px-4 py-3 mb-4">
+        ⏺ Sync running, started <%= time_ago_in_words(status[:started_at]) %> ago…
+      </div>
+      <script>
+        window.__titoSyncReload = setTimeout(() => location.reload(), 15000);
+      </script>
+    <% when :finished %>
+      <div class="rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-900 px-4 py-3 mb-4">
+        ✓ Last sync <%= time_ago_in_words(status[:finished_at]) %> ago:
+        <%= status[:already] %> already linked, <%= status[:connected] %> connected,
+        <%= status[:added] %> added
+        <% if status[:failed].to_i > 0 %>
+          <span class="text-amber-700">· <%= status[:failed] %> ticket<%= "s" if status[:failed] != 1 %> skipped (see logs)</span>
+        <% end %>
+      </div>
+      <script>clearTimeout(window.__titoSyncReload);</script>
+    <% when :failed %>
+      <div class="rounded-lg border border-red-300 bg-red-50 text-red-900 px-4 py-3 mb-4">
+        ✗ Sync failed <%= time_ago_in_words(status[:finished_at]) %> ago:
+        <%= status[:error] %>. Check your Tito configuration.
+      </div>
+      <script>clearTimeout(window.__titoSyncReload);</script>
+    <% end %>
+  <% end %>
+</div>

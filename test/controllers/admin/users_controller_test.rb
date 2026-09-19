@@ -147,4 +147,72 @@ class Admin::UsersControllerTest < ActionDispatch::IntegrationTest
     # state since this user has no non-embassy plan items.
     assert_match "Nothing else planned", response.body
   end
+
+  test "admin PATCH /admin/users/:id with a role change locks it against TitoSyncJob promotion" do
+    sign_in_as users(:jeremy)
+    attendee = users(:attendee_one)
+
+    patch admin_user_path(attendee), params: { user: { role: "volunteer" } }
+
+    assert attendee.reload.role_set_by_admin?
+    assert attendee.volunteer?
+  end
+
+  test "admin PATCH /admin/users/:id without changing role does not lock it" do
+    sign_in_as users(:jeremy)
+    attendee = users(:attendee_one)
+
+    patch admin_user_path(attendee), params: { user: { role: "attendee", first_name: "Ali" } }
+
+    assert_not attendee.reload.role_set_by_admin?
+  end
+
+  test "admin creating a user with an explicit non-default role locks it" do
+    sign_in_as users(:jeremy)
+
+    post admin_users_path, params: { user: { email: "newvol@example.com", first_name: "New", last_name: "Vol", role: "volunteer" } }
+
+    assert User.find_by(email: "newvol@example.com").role_set_by_admin?
+  end
+
+  test "attendee POST /admin/users/sync returns 404" do
+    sign_in_as users(:attendee_one)
+    post sync_admin_users_path
+    assert_response :not_found
+  end
+
+  test "admin POST /admin/users/sync enqueues TitoSyncJob and redirects immediately" do
+    sign_in_as users(:jeremy)
+
+    assert_enqueued_with(job: TitoSyncJob) do
+      post sync_admin_users_path
+    end
+
+    assert_redirected_to admin_users_path
+    assert_equal "Sync started.", flash[:notice]
+    assert_equal :running, TitoSyncJob.status[:state]
+  end
+
+  test "admin POST /admin/users/sync while already running is refused" do
+    sign_in_as users(:jeremy)
+    TitoSyncJob.mark_running!
+
+    assert_no_enqueued_jobs do
+      post sync_admin_users_path
+    end
+
+    assert_redirected_to admin_users_path
+    assert_equal "A sync is already running.", flash[:alert]
+  end
+
+  test "admin POST /admin/users/sync allows re-enqueueing once the running status is stale" do
+    sign_in_as users(:jeremy)
+    Rails.cache.write(TitoSyncJob::CACHE_KEY, { state: :running, started_at: 1.hour.ago })
+
+    assert_enqueued_with(job: TitoSyncJob) do
+      post sync_admin_users_path
+    end
+
+    assert_equal "Sync started.", flash[:notice]
+  end
 end

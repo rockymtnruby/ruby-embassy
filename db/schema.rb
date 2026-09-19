@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_30_192318) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_18_063506) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -223,6 +223,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_30_192318) do
     t.string "last_name"
     t.datetime "last_seen_at"
     t.integer "role", default: 0, null: false
+    t.boolean "role_set_by_admin", default: false, null: false
     t.string "tito_account_slug"
     t.string "tito_event_slug"
     t.string "tito_ticket_slug"

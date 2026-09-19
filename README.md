@@ -82,9 +82,24 @@ automatically in development and test, nothing to source by hand).
 | `SOLID_QUEUE_IN_PUMA` | auto-on | **Required** |
 | `APP_HOST` | not needed | **Required** |
 | `POSTMARK_API_TOKEN` | not needed | **Required** |
+| `MAIL_PROVIDER` | not needed | optional (`postmark` default, or `brevo`) |
+| `BREVO_API_KEY` | not needed | required only if `MAIL_PROVIDER=brevo` |
+| `MAIL_FROM_ADDRESS` | not needed | optional, defaults to `noreply@rockymtnruby.dev` |
 | `MISSION_CONTROL_USER` / `MISSION_CONTROL_PASSWORD` | optional | **Required** |
 | `TITO_API_TOKEN` / `TITO_ACCOUNT_SLUG` / `TITO_EVENT_SLUG` | optional | **Required** |
 | `RAILS_LOG_LEVEL`, `WEB_CONCURRENCY` | optional | optional |
+
+### Switching email providers
+
+`MAIL_PROVIDER` selects Postmark (`postmark`, the default when unset) or Brevo (`brevo`) —
+either can be primary or backup, there's nothing structurally special about either one. Set
+`MAIL_PROVIDER` and the matching provider's API key/token on Railway and redeploy; no code
+change needed either direction.
+
+The sender address (`MAIL_FROM_ADDRESS`, defaults to the one hardcoded in the app) is
+independent of which provider is active. Whichever address you use must be verified with
+whichever provider is currently selected — an unverified sender gets rejected by that
+provider's API.
 
 ## Production / Railway deploy
 

@@ -57,7 +57,7 @@ class User < ApplicationRecord
 
   def admin_ticket_url
     return nil if tito_ticket_slug.blank?
-    "https://dashboard.tito.io/#{tito_account_slug}/#{tito_event_slug}/tickets/#{tito_ticket_slug}"
+    "https://ti.to/#{tito_account_slug}/#{tito_event_slug}/tickets/#{tito_ticket_slug}"
   end
 
   def full_name

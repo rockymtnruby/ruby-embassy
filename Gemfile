@@ -49,6 +49,11 @@ gem "tito_ruby"
 # Postmark for transactional email in production
 gem "postmark-rails"
 
+# Brevo for backup transactional email. Its API client is used instead of an
+# SMTP delivery method because Brevo's SMTP relay requires a separate,
+# support-activated gate on new accounts that the API doesn't have.
+gem "brevo"
+
 # PDF generation for the passport application form
 gem "prawn"
 gem "prawn-table"

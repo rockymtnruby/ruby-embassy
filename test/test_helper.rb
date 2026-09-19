@@ -10,6 +10,11 @@ module ActiveSupport
     # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
     fixtures :all
 
+    # :memory_store (config/environments/test.rb) is per-process but persists
+    # across tests within a process, so clear it between tests to avoid one
+    # test's TitoSyncJob status leaking into the next.
+    setup { Rails.cache.clear }
+
     # Add more helper methods to be used by all tests here...
   end
 end

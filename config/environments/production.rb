@@ -63,9 +63,23 @@ Rails.application.configure do
     protocol: "https"
   }
 
-  # Send email via Postmark
-  config.action_mailer.delivery_method = :postmark
-  config.action_mailer.postmark_settings = { api_token: ENV["POSTMARK_API_TOKEN"] }
+  # Send email via Postmark (default) or Brevo
+  case ENV.fetch("MAIL_PROVIDER", "postmark")
+  when "postmark"
+    config.action_mailer.delivery_method = :postmark
+    config.action_mailer.postmark_settings = { api_token: ENV["POSTMARK_API_TOKEN"] }
+  when "brevo"
+    # This file runs too early in boot for Zeitwerk to autoload lib/ yet,
+    # so require it explicitly rather than referencing the bare constant.
+    require Rails.root.join("lib/brevo_delivery_method")
+    # Registered here (not via config.action_mailer.brevo_settings=) so the
+    # settings are applied synchronously, with no dependency on initializer
+    # load order relative to ActionMailer::Railtie's own config application.
+    ActionMailer::Base.add_delivery_method :brevo, BrevoDeliveryMethod, api_key: ENV.fetch("BREVO_API_KEY")
+    config.action_mailer.delivery_method = :brevo
+  else
+    raise "Unknown MAIL_PROVIDER #{ENV['MAIL_PROVIDER'].inspect} (expected postmark or brevo)"
+  end
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
   # the I18n.default_locale when a translation cannot be found).

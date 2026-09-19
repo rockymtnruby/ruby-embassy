@@ -140,6 +140,34 @@ class UserTest < ActiveSupport::TestCase
     assert_equal "555-9999", blank_rsvp.reload.contact_method
   end
 
+  test "admin_ticket_url is nil when tito_ticket_slug is blank" do
+    assert_nil users(:attendee_one).admin_ticket_url
+  end
+
+  test "admin_ticket_url builds a ti.to URL from the row's memorialized slugs" do
+    user = User.create!(
+      email: "ticketed@example.com", first_name: "Tick", last_name: "Eted",
+      tito_ticket_slug: "abc123", tito_account_slug: "some-org", tito_event_slug: "some-event"
+    )
+
+    assert_equal "https://ti.to/some-org/some-event/tickets/abc123", user.admin_ticket_url
+  end
+
+  test "admin_ticket_url uses the memorialized slugs, not current ENV, once set" do
+    user = User.create!(
+      email: "ticketed2@example.com", first_name: "Tick", last_name: "Eted",
+      tito_ticket_slug: "xyz789", tito_account_slug: "old-org", tito_event_slug: "old-event"
+    )
+
+    original_account_slug, original_event_slug = ENV["TITO_ACCOUNT_SLUG"], ENV["TITO_EVENT_SLUG"]
+    ENV["TITO_ACCOUNT_SLUG"] = "new-org-from-env"
+    ENV["TITO_EVENT_SLUG"] = "new-event-from-env"
+
+    assert_equal "https://ti.to/old-org/old-event/tickets/xyz789", user.admin_ticket_url
+  ensure
+    ENV["TITO_ACCOUNT_SLUG"], ENV["TITO_EVENT_SLUG"] = original_account_slug, original_event_slug
+  end
+
   test "propagate_contact_to_blank_rsvps! is a no-op for blank input" do
     user = users(:attendee_one)
     activity = ScheduleItem.create!(day: "mon", title: "Hike", kind: :activity, is_public: true)

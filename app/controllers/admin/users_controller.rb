@@ -9,6 +9,7 @@ module Admin
     COMPUTED_SORTS = %w[rsvps volunteer_spots hosting].freeze
 
     def index
+      @sync_status = TitoSyncJob.status
       order_clause = apply_sort(SORTABLE_COLUMNS) || DEFAULT_ORDER
       @query = params[:q].to_s.strip
       @users = filtered_users.reorder(Arel.sql(order_clause)).to_a
@@ -69,6 +70,10 @@ module Admin
 
     def create
       @user = User.new(user_params)
+      # Locks the role against TitoSyncJob's auto-promotion. An admin
+      # explicitly choosing a role here — even the default — is a
+      # deliberate decision the sync should never override.
+      @user.role_set_by_admin = true if @user.role_changed?
 
       if @user.save(context: :interactive)
         redirect_to admin_users_path, notice: "User added."
@@ -84,6 +89,9 @@ module Admin
     def update
       @user = User.find(params[:id])
       @user.assign_attributes(user_params)
+      # See the same line in #create — an admin changing role here locks it
+      # against TitoSyncJob's auto-promotion.
+      @user.role_set_by_admin = true if @user.role_changed?
 
       if @user.save(context: :interactive)
         redirect_to admin_users_path, notice: "User updated."
@@ -98,42 +106,13 @@ module Admin
     end
 
     def sync
-      users = User.all.to_a
-      slugs  = users.each_with_object({}) { |u, h| h[u.tito_ticket_slug] = u if u.tito_ticket_slug.present? }
-      emails = users.each_with_object({}) { |u, h| (h[u.email.downcase] ||= u) if u.email.present? && u.tito_ticket_slug.blank? }
-
-      already = 0
-      connected = 0
-      added = 0
-
-      User.tito_client.tickets.where(state: %w[complete]).each do |ticket|
-        if slugs[ticket.slug]
-          already += 1
-        elsif (user = emails[ticket.email.to_s.downcase])
-          user.update!(
-            tito_ticket_slug: ticket.slug,
-            first_name: ticket.first_name,
-            last_name: ticket.last_name
-          )
-          connected += 1
-        else
-          User.create!(
-            tito_ticket_slug: ticket.slug,
-            first_name: ticket.first_name,
-            last_name: ticket.last_name,
-            email: ticket.email,
-            role: :attendee
-          )
-          added += 1
-        end
+      if TitoSyncJob.running?
+        return redirect_to admin_users_path, alert: "A sync is already running."
       end
 
-      redirect_to admin_users_path,
-        notice: "Sync complete: #{already} already linked, #{connected} connected, #{added} added."
-    rescue StandardError => e
-      Rails.logger.error("Tito sync error: #{e.class}: #{e.message}")
-      redirect_to admin_users_path,
-        alert: "Sync failed: #{e.message}. Check your Tito configuration."
+      TitoSyncJob.mark_running!
+      TitoSyncJob.perform_later
+      redirect_to admin_users_path, notice: "Sync started."
     end
 
     private
