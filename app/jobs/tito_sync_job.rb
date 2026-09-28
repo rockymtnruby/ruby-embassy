@@ -106,16 +106,19 @@ class TitoSyncJob < ApplicationJob
     WAITLIST_BY_RELEASE_TITLE.any? { |pattern, _| release_title&.match?(pattern) }
   end
 
-  # Swag sync never overrides human decisions: size is only ever filled
-  # when blank, and waitlist applies to any untouched pending row (fresh or
-  # pre-existing) whose release is a late ticket. Given/missed/waitlist rows
-  # and notes belong to admins. Edge case: an admin who deliberately moves
-  # someone waitlist -> pending will see the next manual sync move them back;
-  # the sync is admin-triggered, so this stays visible, not silent.
+  # Swag sync never overrides human decisions. Size is only ever filled
+  # when blank. Waitlist applies only to fully untouched rows (pending with
+  # no size and no note — i.e. the migration backfill or a fresh login row),
+  # whether the user is new or pre-existing. Any human signal — a status
+  # change, a note, even a filled size — means admins own the row and the
+  # sync leaves it alone, so an admin reverting waitlist -> pending sticks.
+  # Untouched-ness is captured before filling, so a late-ticket buyer with a
+  # size answer still gets waitlisted on the same run.
   def sync_shirt_handoff!(user, ticket_size:, waitlisted:)
     handoff = user.shirt_handoff || user.ensure_shirt_handoff
+    untouched = handoff.pending? && handoff.size.blank? && handoff.note.blank?
     handoff.update!(size: ticket_size) if handoff.size.blank? && ticket_size.present?
-    handoff.update!(status: :waitlist) if waitlisted && handoff.pending?
+    handoff.update!(status: :waitlist) if waitlisted && untouched
   end
 
   # Maps Tito ticket ids to shirt sizes via the size question's answers.

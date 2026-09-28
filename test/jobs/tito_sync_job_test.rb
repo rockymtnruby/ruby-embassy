@@ -217,6 +217,38 @@ class TitoSyncJobTest < ActiveJob::TestCase
     assert_equal "waitlist", user.reload.shirt_handoff.status
   end
 
+  test "re-sync leaves an admin-reverted pending handoff with a note alone" do
+    user = users(:attendee_one)
+    user.update!(tito_ticket_slug: "linked-slug")
+    user.shirt_handoff.update!(status: :waitlist, note: "leftover promised")
+    user.shirt_handoff.update!(status: :pending)
+
+    releases = [ FakeRelease.new(1, "Late Ticket (no t-shirt)") ]
+    tickets = [ FakeTicket.new("linked-slug", user.email, user.first_name, user.last_name, 1, 402) ]
+
+    with_fake_tito_client(tickets, releases: releases) { TitoSyncJob.perform_now }
+
+    handoff = user.reload.shirt_handoff
+    assert handoff.pending?
+    assert_equal "leftover promised", handoff.note
+  end
+
+  test "re-sync leaves an admin-reverted pending handoff with a size alone" do
+    user = users(:attendee_one)
+    user.update!(tito_ticket_slug: "linked-slug")
+    user.shirt_handoff.update!(status: :waitlist, size: "M")
+    user.shirt_handoff.update!(status: :pending)
+
+    releases = [ FakeRelease.new(1, "Late Ticket (no t-shirt)") ]
+    tickets = [ FakeTicket.new("linked-slug", user.email, user.first_name, user.last_name, 1, 403) ]
+
+    with_fake_tito_client(tickets, releases: releases) { TitoSyncJob.perform_now }
+
+    handoff = user.reload.shirt_handoff
+    assert handoff.pending?
+    assert_equal "M", handoff.size
+  end
+
   test "shirt size is filled from the t-shirt question answers" do
     releases = [ FakeRelease.new(1, "Standard Ticket") ]
     tickets = [ FakeTicket.new("size-slug", "sized@example.com", "Sized", "One", 1, 201) ]
