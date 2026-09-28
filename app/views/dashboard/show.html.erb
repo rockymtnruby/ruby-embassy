@@ -13,6 +13,8 @@
       What would you like to do?
     </p>
 
+    <%= render "shared/announcements", announcements: @announcements %>
+
     <% if (current_user.volunteer? || current_user.admin?) && @empty_volunteer_count.to_i > 0 %>
       <%= link_to schedule_path(kind: :volunteer), class: "action-card action-card--hero mb-6" do %>
         <h2 class="action-card__title">Volunteers Needed</h2>

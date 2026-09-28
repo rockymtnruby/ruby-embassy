@@ -1,0 +1,16 @@
+<%# locals: (announcements:) -%>
+<% if announcements.any? %>
+  <section class="mb-8 space-y-4" aria-label="Announcements">
+    <% announcements.each do |announcement| %>
+      <div class="card card-compact">
+        <h2 class="font-semibold text-navy flex items-center gap-2">
+          <% if announcement.pinned? %>
+            <span aria-hidden="true">📌</span>
+          <% end %>
+          <%= announcement.title %>
+        </h2>
+        <div class="text-gray mt-1"><%= simple_format(announcement.body) %></div>
+      </div>
+    <% end %>
+  </section>
+<% end %>
