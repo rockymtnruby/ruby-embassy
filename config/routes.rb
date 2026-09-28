@@ -32,6 +32,7 @@ Rails.application.routes.draw do
     resources :volunteer_signups, only: %i[create destroy]
     resources :embassy_questions
     resources :notary_profiles
+    resources :announcements
     resources :embassy_applications, only: %i[index show destroy] do
       member do
         patch :mark_received
