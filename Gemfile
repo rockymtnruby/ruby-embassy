@@ -4,6 +4,8 @@ source "https://rubygems.org"
 gem "rails", "~> 8.1.2"
 # Pin below the 3.x major bump until app/test compatibility with it is verified
 gem "json", "~> 2.19"
+# CSV export for the admin swag page (bundled gem since Ruby 3.4)
+gem "csv", require: false
 # The modern asset pipeline for Rails [https://github.com/rails/propshaft]
 gem "propshaft"
 # Use postgresql as the database for Active Record

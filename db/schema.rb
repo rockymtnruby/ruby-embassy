@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_28_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_29_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -224,6 +224,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_28_000000) do
     t.index ["slug"], name: "index_schedule_items_on_slug", unique: true, where: "(slug IS NOT NULL)"
   end
 
+  create_table "shirt_handoffs", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "given_at"
+    t.text "note"
+    t.string "size"
+    t.integer "status", default: 0, null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["user_id"], name: "index_shirt_handoffs_on_user_id", unique: true
+  end
+
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "email", null: false
@@ -263,4 +274,5 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_28_000000) do
   add_foreign_key "plan_items", "schedule_items"
   add_foreign_key "plan_items", "users"
   add_foreign_key "schedule_items", "users", column: "created_by_id"
+  add_foreign_key "shirt_handoffs", "users"
 end
