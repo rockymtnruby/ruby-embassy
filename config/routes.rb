@@ -33,6 +33,15 @@ Rails.application.routes.draw do
     resources :embassy_questions
     resources :notary_profiles
     resources :announcements
+    resources :shirt_handoffs, only: %i[index edit update] do
+      member do
+        patch :mark_given
+        patch :unmark
+      end
+      collection do
+        get :export
+      end
+    end
     resources :embassy_applications, only: %i[index show destroy] do
       member do
         patch :mark_received

@@ -1,0 +1,85 @@
+<% content_for :title, "Swag — Embassy Admin" %>
+
+<div class="flex items-start justify-between gap-3 mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-navy">Swag · Shirts</h1>
+    <p class="text-muted">
+      Check off shirts as you hand them out. Late-ticket buyers start on the waitlist.
+    </p>
+  </div>
+  <%= link_to "Export CSV", export_admin_shirt_handoffs_path(q: @query, status: @status),
+        class: "btn btn-small btn-muted shrink-0" %>
+</div>
+
+<div class="sticky top-0 z-10 mt-6 py-4 space-y-4" style="background: inherit;">
+  <%= form_with url: admin_shirt_handoffs_path, method: :get, local: true, class: "flex gap-2" do %>
+    <%= hidden_field_tag :status, @status %>
+    <%= text_field_tag :q, @query,
+          placeholder: "Search name or email…",
+          class: "input flex-1" %>
+    <%= submit_tag "Search", class: "btn btn-navy" %>
+  <% end %>
+
+  <nav class="hidden md:flex gap-2 flex-wrap" aria-label="Filter by status">
+    <%= link_to "All (#{@status_counts.values.sum})", admin_shirt_handoffs_path(q: @query),
+          class: "btn btn-small #{@status.nil? ? 'btn-navy' : 'btn-muted'}" %>
+    <% ShirtHandoff.statuses.each_key do |s| %>
+      <%= link_to "#{s.humanize} (#{@status_counts[s] || 0})",
+            admin_shirt_handoffs_path(q: @query, status: s),
+            class: "btn btn-small #{@status == s ? 'btn-navy' : 'btn-muted'}" %>
+    <% end %>
+  </nav>
+</div>
+
+<div class="hidden md:flex gap-2 flex-wrap mb-4 text-sm">
+  <% ShirtHandoff::SIZES.each do |size| %>
+    <span class="badge badge-attendee">
+      <%= size %> · <%= @size_counts[[size, "pending"]] || 0 %> left · <%= @size_counts[[size, "given"]] || 0 %> given
+    </span>
+  <% end %>
+  <% unknown = (@size_counts.select { |(size, _), _| size.blank? }.values.sum) %>
+  <% if unknown.positive? %>
+    <span class="badge badge-attendee">no size · <%= unknown %></span>
+  <% end %>
+</div>
+
+<% if @handoffs.empty? %>
+  <div class="card text-muted">
+    <% if @query.present? || @status.present? %>
+      No matches. <%= link_to "Clear filters", admin_shirt_handoffs_path, class: "text-blue underline" %>
+    <% else %>
+      No swag records yet.
+    <% end %>
+  </div>
+<% else %>
+  <div class="space-y-4">
+    <% @handoffs.each do |handoff| %>
+      <% user = handoff.user %>
+      <div class="card card-compact">
+        <div class="flex items-center justify-between gap-2">
+          <div class="font-medium text-navy truncate min-w-0"><%= user.full_name %></div>
+          <span class="item-badge item-badge--<%= handoff.status %> shrink-0"><%= handoff.status.humanize %></span>
+        </div>
+        <div class="text-gray text-sm truncate"><%= user.email %></div>
+        <div class="flex gap-2 mt-2 items-center">
+          <span class="badge badge-size"><%= handoff.size.presence || "—" %></span>
+          <span class="badge badge-<%= user.role %>"><%= user.role.humanize %></span>
+        </div>
+        <% if handoff.note.present? %>
+          <p class="text-gray text-sm mt-2"><%= handoff.note %></p>
+        <% end %>
+        <div class="flex gap-2 mt-3">
+          <% if handoff.given? %>
+            <%= button_to "Undo", unmark_admin_shirt_handoff_path(handoff, q: @query, status: @status),
+                  method: :patch, class: "btn btn-muted btn-full", form: { class: "flex-1" } %>
+          <% else %>
+            <%= button_to "Mark given", mark_given_admin_shirt_handoff_path(handoff, q: @query, status: @status),
+                  method: :patch, class: "btn btn-navy btn-full", form: { class: "flex-1" } %>
+          <% end %>
+          <%= link_to "Edit", edit_admin_shirt_handoff_path(handoff, q: @query, status: @status),
+                class: "btn btn-muted flex-1 text-center" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% end %>
