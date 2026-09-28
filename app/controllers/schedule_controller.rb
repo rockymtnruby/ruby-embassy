@@ -1,5 +1,6 @@
 class ScheduleController < ApplicationController
   def index
+    @announcements = Announcement.visible
     @selected_kind  = ScheduleItem.kinds.key?(params[:kind].to_s) ? params[:kind] : nil
     @show_unplanned = params[:unplanned].present?
     @show_past      = params[:show_past].present?

@@ -10,6 +10,8 @@
       Browse the full conference agenda. Tap <span class="font-medium">Add to plan</span> on any talk or <span class="font-medium">RSVP</span> on any activity to save it to your Plan.
     </p>
 
+    <%= render "shared/announcements", announcements: @announcements %>
+
     <%= render "shared/kind_filter", base_path: schedule_path, selected_kind: @selected_kind %>
 
     <nav class="kind-filter" aria-label="View options">

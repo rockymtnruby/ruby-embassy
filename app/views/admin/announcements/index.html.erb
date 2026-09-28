@@ -1,0 +1,46 @@
+<% content_for :title, "Announcements — Embassy Admin" %>
+
+<div class="flex items-center justify-between mb-6 gap-3 flex-wrap">
+  <div>
+    <h1 class="text-2xl font-bold text-navy">Announcements</h1>
+    <p class="text-muted">
+      Shown to signed-in guests at the top of the dashboard and schedule.
+      Pin important ones (like wifi) to keep them on top.
+    </p>
+  </div>
+  <%= link_to "+ New Announcement", new_admin_announcement_path, class: "btn btn-red" %>
+</div>
+
+<% if @announcements.any? %>
+  <div class="table-scroll">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Body</th>
+          <th style="width: 90px;">Pinned</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @announcements.each do |announcement| %>
+          <tr>
+            <td class="font-medium"><%= announcement.title %></td>
+            <td><%= truncate(announcement.body, length: 120) %></td>
+            <td><%= announcement.pinned? ? "📌" : "" %></td>
+            <td class="text-right">
+              <div class="flex gap-2 justify-end">
+                <%= link_to "Edit", edit_admin_announcement_path(announcement), class: "btn btn-muted btn-small" %>
+                <%= button_to "Delete", admin_announcement_path(announcement), method: :delete,
+                      data: { turbo_confirm: "Remove this announcement?" },
+                      class: "btn btn-red btn-small" %>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% else %>
+  <p class="text-muted">No announcements yet.</p>
+<% end %>

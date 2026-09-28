@@ -1,0 +1,38 @@
+<%# locals: (announcement:) -%>
+<% if announcement.errors.any? %>
+  <div class="alert alert-error mb-4">
+    <ul class="list-disc">
+      <% announcement.errors.full_messages.each do |msg| %>
+        <li><%= msg %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<div class="card card-compact">
+  <%= form_with model: announcement,
+                url: (announcement.persisted? ? admin_announcement_path(announcement) : admin_announcements_path),
+                local: true,
+                class: "space-y-4" do |f| %>
+    <div>
+      <%= f.label :title, class: "label" %>
+      <%= f.text_field :title, class: "input", placeholder: "e.g., Venue wifi" %>
+    </div>
+
+    <div>
+      <%= f.label :body, class: "label" %>
+      <%= f.text_area :body, rows: 4, class: "input",
+                      placeholder: "e.g., Network: RMR26 · Password: rubyrubyruby" %>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <%= f.check_box :pinned %>
+      <%= f.label :pinned, "Pin to top (for wifi and other must-see info)" %>
+    </div>
+
+    <div class="flex gap-3 pt-4">
+      <%= f.submit "Save Announcement", class: "btn btn-navy" %>
+      <%= link_to "Cancel", admin_announcements_path, class: "btn btn-muted" %>
+    </div>
+  <% end %>
+</div>
