@@ -204,6 +204,19 @@ class TitoSyncJobTest < ActiveJob::TestCase
     assert_equal "pending", User.find_by(email: "std@example.com").shirt_handoff.status
   end
 
+  test "re-sync moves a pre-existing pending handoff to waitlist for late tickets" do
+    user = users(:attendee_one)
+    user.update!(tito_ticket_slug: "linked-slug")
+    assert user.shirt_handoff.pending?
+
+    releases = [ FakeRelease.new(1, "Late Ticket (no t-shirt)") ]
+    tickets = [ FakeTicket.new("linked-slug", user.email, user.first_name, user.last_name, 1, 401) ]
+
+    with_fake_tito_client(tickets, releases: releases) { TitoSyncJob.perform_now }
+
+    assert_equal "waitlist", user.reload.shirt_handoff.status
+  end
+
   test "shirt size is filled from the t-shirt question answers" do
     releases = [ FakeRelease.new(1, "Standard Ticket") ]
     tickets = [ FakeTicket.new("size-slug", "sized@example.com", "Sized", "One", 1, 201) ]

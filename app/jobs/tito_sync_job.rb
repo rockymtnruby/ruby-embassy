@@ -49,7 +49,6 @@ class TitoSyncJob < ApplicationJob
 
     User.tito_client.tickets.where(state: %w[complete]).each do |ticket|
       role = role_for(release_titles[ticket.release_id])
-      fresh = false
 
       if (user = slugs[ticket.slug])
         # This has to run here too, not just on connect/create below — most
@@ -74,13 +73,11 @@ class TitoSyncJob < ApplicationJob
           role: role
         )
         added += 1
-        fresh = true
       end
       sync_shirt_handoff!(
         user,
         ticket_size: shirt_sizes[ticket.id],
-        waitlisted: waitlisted?(release_titles[ticket.release_id]),
-        fresh: fresh
+        waitlisted: waitlisted?(release_titles[ticket.release_id])
       )
     rescue StandardError => e
       # One malformed ticket shouldn't abort the whole run — count it and move on.
@@ -109,13 +106,16 @@ class TitoSyncJob < ApplicationJob
     WAITLIST_BY_RELEASE_TITLE.any? { |pattern, _| release_title&.match?(pattern) }
   end
 
-  # Swag sync never overrides human decisions: status is set only for users
-  # created on this run (late-ticket release → waitlist), and size is only
-  # ever filled when blank. Marking given/missed and notes belong to admins.
-  def sync_shirt_handoff!(user, ticket_size:, waitlisted:, fresh:)
+  # Swag sync never overrides human decisions: size is only ever filled
+  # when blank, and waitlist applies to any untouched pending row (fresh or
+  # pre-existing) whose release is a late ticket. Given/missed/waitlist rows
+  # and notes belong to admins. Edge case: an admin who deliberately moves
+  # someone waitlist -> pending will see the next manual sync move them back;
+  # the sync is admin-triggered, so this stays visible, not silent.
+  def sync_shirt_handoff!(user, ticket_size:, waitlisted:)
     handoff = user.shirt_handoff || user.ensure_shirt_handoff
     handoff.update!(size: ticket_size) if handoff.size.blank? && ticket_size.present?
-    handoff.update!(status: :waitlist) if fresh && waitlisted && handoff.pending?
+    handoff.update!(status: :waitlist) if waitlisted && handoff.pending?
   end
 
   # Maps Tito ticket ids to shirt sizes via the size question's answers.
