@@ -1,8 +1,12 @@
 require "test_helper"
 
 class TitoSyncJobTest < ActiveJob::TestCase
-  FakeTicket = Struct.new(:slug, :email, :first_name, :last_name, :release_id)
+  FakeTicket = Struct.new(:slug, :email, :first_name, :last_name, :release_id, :id)
   FakeRelease = Struct.new(:id, :title)
+  FakeAnswer = Struct.new(:ticket_id, :response)
+  FakeQuestion = Struct.new(:title, :answer_list) do
+    def answers = answer_list
+  end
 
   class FakeTicketsScope
     def initialize(tickets)
@@ -15,9 +19,10 @@ class TitoSyncJobTest < ActiveJob::TestCase
   end
 
   class FakeTitoClient
-    def initialize(tickets, releases)
+    def initialize(tickets, releases, questions = [])
       @tickets = tickets
       @releases = releases
+      @questions = questions
     end
 
     def tickets
@@ -27,10 +32,14 @@ class TitoSyncJobTest < ActiveJob::TestCase
     def releases
       @releases
     end
+
+    def questions
+      @questions
+    end
   end
 
-  def with_fake_tito_client(tickets, releases: [])
-    fake_client = FakeTitoClient.new(tickets, releases)
+  def with_fake_tito_client(tickets, releases: [], questions: [])
+    fake_client = FakeTitoClient.new(tickets, releases, questions)
     User.define_singleton_method(:tito_client) { fake_client }
     yield
   ensure
@@ -180,5 +189,58 @@ class TitoSyncJobTest < ActiveJob::TestCase
     assert_match "boom: unreachable", status[:error]
   ensure
     User.singleton_class.send(:remove_method, :tito_client)
+  end
+
+  test "a late-ticket buyer gets a waitlist handoff, others get pending" do
+    releases = [ FakeRelease.new(1, "Late Ticket (no t-shirt)"), FakeRelease.new(2, "Standard Ticket") ]
+    tickets = [
+      FakeTicket.new("late-slug", "late@example.com", "Late", "Buyer", 1, 101),
+      FakeTicket.new("std-slug", "std@example.com", "Std", "Buyer", 2, 102)
+    ]
+
+    with_fake_tito_client(tickets, releases: releases) { TitoSyncJob.perform_now }
+
+    assert_equal "waitlist", User.find_by(email: "late@example.com").shirt_handoff.status
+    assert_equal "pending", User.find_by(email: "std@example.com").shirt_handoff.status
+  end
+
+  test "shirt size is filled from the t-shirt question answers" do
+    releases = [ FakeRelease.new(1, "Standard Ticket") ]
+    tickets = [ FakeTicket.new("size-slug", "sized@example.com", "Sized", "One", 1, 201) ]
+    questions = [ FakeQuestion.new("What is your t-shirt size?", [ FakeAnswer.new(201, " XL ") ]) ]
+
+    with_fake_tito_client(tickets, releases: releases, questions: questions) { TitoSyncJob.perform_now }
+
+    assert_equal "XL", User.find_by(email: "sized@example.com").shirt_handoff.size
+  end
+
+  test "re-sync fills a blank size but never overwrites an admin-set size or status" do
+    user = users(:attendee_one)
+    user.update!(tito_ticket_slug: "linked-slug")
+    user.shirt_handoff.update!(size: "M", status: :given, note: "proxy pickup")
+
+    releases = [ FakeRelease.new(1, "Standard Ticket") ]
+    tickets = [ FakeTicket.new("linked-slug", user.email, user.first_name, user.last_name, 1, 301) ]
+    questions = [ FakeQuestion.new("What is your t-shirt size?", [ FakeAnswer.new(301, "L") ]) ]
+
+    with_fake_tito_client(tickets, releases: releases, questions: questions) { TitoSyncJob.perform_now }
+
+    handoff = user.reload.shirt_handoff
+    assert_equal "M", handoff.size
+    assert handoff.given?
+    assert_equal "proxy pickup", handoff.note
+  end
+
+  test "a broken answers endpoint does not fail the sync" do
+    raising_questions = Object.new
+    def raising_questions.detect(*) = raise("tito down")
+
+    tickets = [ FakeTicket.new("ok-slug", "ok@example.com", "Ok", "One") ]
+    with_fake_tito_client(tickets, questions: raising_questions) { TitoSyncJob.perform_now }
+
+    status = TitoSyncJob.status
+    assert_equal :finished, status[:state]
+    assert User.exists?(email: "ok@example.com")
+    assert_nil User.find_by(email: "ok@example.com").shirt_handoff.size
   end
 end

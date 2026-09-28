@@ -11,6 +11,15 @@ class TitoSyncJob < ApplicationJob
     /volunteer/i => :volunteer
   }.freeze
 
+  # Matches a Tito release whose buyers get no shirt (late purchases go on
+  # hold for leftovers). Same title-matching approach as ROLE_BY_RELEASE_TITLE.
+  WAITLIST_BY_RELEASE_TITLE = {
+    /late ticket/i => true
+  }.freeze
+
+  # Title of the Tito ticket question holding the attendee's shirt size.
+  SHIRT_SIZE_QUESTION_TITLE = /t-shirt size/i.freeze
+
   retry_on Tito::Error, wait: 30.seconds, attempts: 3 if defined?(Tito::Error)
 
   def self.status
@@ -31,6 +40,7 @@ class TitoSyncJob < ApplicationJob
     slugs  = users.each_with_object({}) { |u, h| h[u.tito_ticket_slug] = u if u.tito_ticket_slug.present? }
     emails = users.each_with_object({}) { |u, h| (h[u.email.downcase] ||= u) if u.email.present? && u.tito_ticket_slug.blank? }
     release_titles = fetch_release_titles
+    shirt_sizes = fetch_shirt_sizes
 
     already = 0
     connected = 0
@@ -39,6 +49,7 @@ class TitoSyncJob < ApplicationJob
 
     User.tito_client.tickets.where(state: %w[complete]).each do |ticket|
       role = role_for(release_titles[ticket.release_id])
+      fresh = false
 
       if (user = slugs[ticket.slug])
         # This has to run here too, not just on connect/create below — most
@@ -55,7 +66,7 @@ class TitoSyncJob < ApplicationJob
         promote!(user, role)
         connected += 1
       else
-        User.create!(
+        user = User.create!(
           tito_ticket_slug: ticket.slug,
           first_name: ticket.first_name,
           last_name: ticket.last_name,
@@ -63,7 +74,14 @@ class TitoSyncJob < ApplicationJob
           role: role
         )
         added += 1
+        fresh = true
       end
+      sync_shirt_handoff!(
+        user,
+        ticket_size: shirt_sizes[ticket.id],
+        waitlisted: waitlisted?(release_titles[ticket.release_id]),
+        fresh: fresh
+      )
     rescue StandardError => e
       # One malformed ticket shouldn't abort the whole run — count it and move on.
       Rails.logger.error("Tito sync: skipped ticket #{ticket&.slug.inspect}: #{e.class}: #{e.message}")
@@ -85,6 +103,35 @@ class TitoSyncJob < ApplicationJob
   def role_for(release_title)
     _, role = ROLE_BY_RELEASE_TITLE.find { |pattern, _| release_title&.match?(pattern) }
     role || :attendee
+  end
+
+  def waitlisted?(release_title)
+    WAITLIST_BY_RELEASE_TITLE.any? { |pattern, _| release_title&.match?(pattern) }
+  end
+
+  # Swag sync never overrides human decisions: status is set only for users
+  # created on this run (late-ticket release → waitlist), and size is only
+  # ever filled when blank. Marking given/missed and notes belong to admins.
+  def sync_shirt_handoff!(user, ticket_size:, waitlisted:, fresh:)
+    handoff = user.shirt_handoff || user.ensure_shirt_handoff
+    handoff.update!(size: ticket_size) if handoff.size.blank? && ticket_size.present?
+    handoff.update!(status: :waitlist) if fresh && waitlisted && handoff.pending?
+  end
+
+  # Maps Tito ticket ids to shirt sizes via the size question's answers.
+  # Best-effort: any failure returns {} and sizes stay admin-editable —
+  # the sync must never fail because of swag.
+  def fetch_shirt_sizes
+    question = User.tito_client.questions.detect { |q| q.title.to_s.match?(SHIRT_SIZE_QUESTION_TITLE) }
+    return {} unless question
+
+    question.answers.each_with_object({}) do |answer, map|
+      size = answer.response.to_s.strip
+      map[answer.ticket_id] = size if answer.ticket_id && size.present?
+    end
+  rescue StandardError => e
+    Rails.logger.error("Tito sync: shirt sizes unavailable: #{e.class}: #{e.message}")
+    {}
   end
 
   # Promotes only — never demotes — and never touches a user whose role an
