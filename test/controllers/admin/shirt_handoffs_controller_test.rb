@@ -45,6 +45,13 @@ class Admin::ShirtHandoffsControllerTest < ActionDispatch::IntegrationTest
     assert_nil @handoff.given_at
   end
 
+  test "admin GET edit returns 200" do
+    sign_in_as users(:jeremy)
+    get edit_admin_shirt_handoff_path(@handoff)
+    assert_response :success
+    assert_match "Size", response.body
+  end
+
   test "admin can update size, status, and note" do
     sign_in_as users(:jeremy)
     patch admin_shirt_handoff_path(@handoff), params: {

@@ -12,47 +12,57 @@
 </div>
 
 <div class="sticky top-0 z-10 mt-6 py-4 space-y-4" style="background: inherit;">
-  <%= form_with url: admin_shirt_handoffs_path, method: :get, local: true, class: "flex gap-2" do %>
+  <%= turbo_frame_tag "swag_list", class: "block" do %>
+  <%= form_with url: admin_shirt_handoffs_path, method: :get, class: "flex gap-2",
+        data: { turbo_frame: "swag_list" } do %>
     <%= hidden_field_tag :status, @status %>
-    <%= text_field_tag :q, @query,
-          placeholder: "Search name or email…",
-          class: "input flex-1" %>
+    <div class="search-wrap">
+      <%= text_field_tag :q, @query,
+            placeholder: "Search name or email…",
+            class: "input" %>
+      <% if @query.present? %>
+        <%= link_to "✕", admin_shirt_handoffs_path(status: @status),
+              class: "search-clear", aria_label: "Clear search" %>
+      <% end %>
+    </div>
     <%= submit_tag "Search", class: "btn btn-navy" %>
   <% end %>
 
-  <nav class="hidden md:flex gap-2 flex-wrap" aria-label="Filter by status">
+  <nav class="hidden md:flex gap-2 flex-wrap mt-4" aria-label="Filter by status">
     <%= link_to "All (#{@status_counts.values.sum})", admin_shirt_handoffs_path(q: @query),
-          class: "btn btn-small #{@status.nil? ? 'btn-navy' : 'btn-muted'}" %>
+          class: "btn btn-small #{@status.nil? ? 'btn-navy' : 'btn-muted'}",
+          data: { turbo_frame: "swag_list" } %>
     <% ShirtHandoff.statuses.each_key do |s| %>
       <%= link_to "#{s.humanize} (#{@status_counts[s] || 0})",
             admin_shirt_handoffs_path(q: @query, status: s),
-            class: "btn btn-small #{@status == s ? 'btn-navy' : 'btn-muted'}" %>
+            class: "btn btn-small #{@status == s ? 'btn-navy' : 'btn-muted'}",
+            data: { turbo_frame: "swag_list" } %>
     <% end %>
   </nav>
-</div>
 
-<div class="hidden md:flex gap-2 flex-wrap mb-4 text-sm">
-  <% ShirtHandoff::SIZES.each do |size| %>
-    <span class="badge badge-attendee">
-      <%= size %> · <%= @size_counts[[size, "pending"]] || 0 %> left · <%= @size_counts[[size, "given"]] || 0 %> given
-    </span>
-  <% end %>
-  <% unknown = (@size_counts.select { |(size, _), _| size.blank? }.values.sum) %>
-  <% if unknown.positive? %>
-    <span class="badge badge-attendee">no size · <%= unknown %></span>
-  <% end %>
-</div>
+  <div class="hidden md:flex gap-2 flex-wrap mb-4 text-sm mt-4">
+    <% ShirtHandoff::SIZES.each do |size| %>
+      <span class="badge badge-attendee">
+        <%= size %> · <%= @size_counts[[size, "pending"]] || 0 %> left · <%= @size_counts[[size, "given"]] || 0 %> given
+      </span>
+    <% end %>
+    <% unknown = (@size_counts.select { |(size, _), _| size.blank? }.values.sum) %>
+    <% if unknown.positive? %>
+      <span class="badge badge-attendee">no size · <%= unknown %></span>
+    <% end %>
+  </div>
 
 <% if @handoffs.empty? %>
   <div class="card text-muted">
     <% if @query.present? || @status.present? %>
-      No matches. <%= link_to "Clear filters", admin_shirt_handoffs_path, class: "text-blue underline" %>
+      No matches for "<%= @query %>".
+      <%= link_to "Clear search", admin_shirt_handoffs_path(status: @status), class: "text-blue underline" %>
     <% else %>
       No swag records yet.
     <% end %>
   </div>
 <% else %>
-  <div class="space-y-4">
+  <div class="space-y-4 mt-4">
     <% @handoffs.each do |handoff| %>
       <% user = handoff.user %>
       <div class="card card-compact">
@@ -71,15 +81,18 @@
         <div class="flex gap-2 mt-3">
           <% if handoff.given? %>
             <%= button_to "Undo", unmark_admin_shirt_handoff_path(handoff, q: @query, status: @status),
-                  method: :patch, class: "btn btn-muted btn-full", form: { class: "flex-1" } %>
+                  method: :patch, class: "btn btn-muted btn-full",
+                  form: { class: "flex-1", data: { turbo_frame: "swag_list" } } %>
           <% else %>
             <%= button_to "Mark given", mark_given_admin_shirt_handoff_path(handoff, q: @query, status: @status),
-                  method: :patch, class: "btn btn-navy btn-full", form: { class: "flex-1" } %>
+                  method: :patch, class: "btn btn-navy btn-full",
+                  form: { class: "flex-1", data: { turbo_frame: "swag_list" } } %>
           <% end %>
           <%= link_to "Edit", edit_admin_shirt_handoff_path(handoff, q: @query, status: @status),
-                class: "btn btn-muted flex-1 text-center" %>
+                class: "btn btn-muted flex-1 text-center", data: { turbo_frame: "_top" } %>
         </div>
       </div>
     <% end %>
   </div>
 <% end %>
+  <% end %>

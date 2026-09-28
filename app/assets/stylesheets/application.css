@@ -1084,6 +1084,30 @@ hr {
 
 .input::placeholder { color: #9ca3af; }
 
+/* Search field with an overlaid ✕ that clears the query server-side
+   (works with zero JavaScript, unlike the native search-field ✕). */
+.search-wrap { position: relative; flex: 1 1 auto; min-width: 0; align-self: center; }
+.search-wrap .input { width: 100%; padding-right: 2.5rem; line-height: 1.5; }
+/* Match the search button to the input height (input uses 0.5rem padding +
+   a 1px border; .btn uses 0.625rem and no border, rendering ~6px taller). */
+.search-wrap + .btn {
+  padding: 0.5rem 1.25rem;
+  border: 1px solid transparent;
+  line-height: 1.5;
+  align-self: center;
+}
+.search-clear {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 1.125rem;
+  line-height: 1;
+  text-decoration: none;
+  padding: 0.25rem;
+}
+
 
 /* ---------- Buttons --------------------------------------- */
 

@@ -25,14 +25,12 @@ class Admin::ShirtHandoffsController < AdminController
 
   def mark_given
     @handoff.mark_given!
-    redirect_to admin_shirt_handoffs_path(index_params),
-                notice: "Shirt marked as given to #{@handoff.user.full_name}."
+    redirect_to admin_shirt_handoffs_path(index_params)
   end
 
   def unmark
     @handoff.unmark!
-    redirect_to admin_shirt_handoffs_path(index_params),
-                notice: "Handoff undone for #{@handoff.user.full_name}."
+    redirect_to admin_shirt_handoffs_path(index_params)
   end
 
   def export
