@@ -1,6 +1,11 @@
 require "csv"
 
 class Admin::ShirtHandoffsController < AdminController
+  # Phase 2: volunteers work the swag table, so they get full access here.
+  # Every other admin page stays admin-only via AdminController.
+  skip_before_action :require_admin!
+  before_action :require_admin_or_volunteer!
+
   before_action :set_handoff, only: %i[edit update mark_given unmark]
 
   def index

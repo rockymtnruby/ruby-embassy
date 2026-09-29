@@ -1,7 +1,8 @@
 <% content_for :container_width, "max-w-6xl" %>
 
-<h1 class="text-2xl font-bold text-navy mb-6">Admin Dashboard</h1>
+<h1 class="text-2xl font-bold text-navy mb-6"><%= admin? ? "Admin Dashboard" : "Volunteer Dashboard" %></h1>
 
+<% if admin? %>
 <h2 class="text-lg font-semibold text-navy mb-4">At a glance</h2>
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
   <div class="stat-card">
@@ -25,9 +26,11 @@
     <div class="stat-card__sub">empty slots, today onward</div>
   </div>
 </div>
+<% end %>
 
 <h2 class="text-lg font-semibold text-navy mb-4">Manage</h2>
 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <% if admin? %>
   <%= link_to admin_users_path, class: "action-card" do %>
     <div class="action-card__title">Attendees</div>
     <div class="action-card__description">Manage attendees, volunteers, and admins. Sync from Tito.</div>
@@ -37,12 +40,14 @@
     <div class="action-card__title">Volunteers</div>
     <div class="action-card__description">Coordinate volunteer signups, shifts, and assignments.</div>
   <% end %>
+  <% end %>
 
   <%= link_to admin_shirt_handoffs_path, class: "action-card" do %>
     <div class="action-card__title">Swag</div>
-    <div class="action-card__description">Track shirt handouts and exceptions.</div>
+    <div class="action-card__description">Check off shirts as you hand them out. Late-ticket buyers start on the waitlist.</div>
   <% end %>
 
+  <% if admin? %>
   <%= link_to admin_schedule_items_path, class: "action-card" do %>
     <div class="action-card__title">Schedule</div>
     <div class="action-card__description">Full CRUD over the conference agenda — all schedule items, by kind.</div>
@@ -81,5 +86,6 @@
   <%= link_to "/admin/jobs", class: "action-card" do %>
     <div class="action-card__title">Background Jobs</div>
     <div class="action-card__description">Inspect background jobs and the Solid Queue dashboard.</div>
+  <% end %>
   <% end %>
 </div>

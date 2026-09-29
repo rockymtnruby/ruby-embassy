@@ -12,6 +12,34 @@ class Admin::ShirtHandoffsControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
+  test "volunteer can view the swag page and mark given" do
+    sign_in_as users(:volunteer_one)
+    get admin_shirt_handoffs_path
+    assert_response :success
+
+    patch mark_given_admin_shirt_handoff_path(@handoff)
+    assert @handoff.reload.given?
+  end
+
+  test "volunteer admin nav shows only Swag" do
+    sign_in_as users(:volunteer_one)
+    get admin_shirt_handoffs_path
+    assert_response :success
+    assert_select "nav.admin-nav a[href=?]", admin_shirt_handoffs_path, text: "Swag"
+    assert_select "nav.admin-nav a[href=?]", admin_users_path, count: 0
+    assert_select "nav.admin-nav a[href=?]", admin_root_path, count: 0
+  end
+
+  test "volunteer user navbar links to the Volunteer dashboard, attendee navbar does not" do
+    sign_in_as users(:volunteer_one)
+    get dashboard_path
+    assert_select "a[href=?]", admin_root_path, text: "Volunteer"
+
+    sign_in_as users(:attendee_one)
+    get dashboard_path
+    assert_select "a[href=?]", admin_root_path, count: 0
+  end
+
   test "admin GET /admin/shirt_handoffs returns 200 with search and filters" do
     sign_in_as users(:jeremy)
     get admin_shirt_handoffs_path

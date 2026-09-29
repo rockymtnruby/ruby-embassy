@@ -6,6 +6,12 @@ class AdminController < ApplicationController
 
   private
 
+  # Opt-in widening for pages volunteers staff (dashboard, swag table).
+  # Same 404-style denial as require_admin!, so role probing learns nothing.
+  def require_admin_or_volunteer!
+    raise ActiveRecord::RecordNotFound unless current_user&.admin? || current_user&.volunteer?
+  end
+
   # Reads params[:sort] and params[:dir], validates them against `columns`
   # (a hash of "key" => "comma,separated,column,exprs"), and returns an
   # ORDER BY clause string. Sets @sort and @dir for the view's sort_link
