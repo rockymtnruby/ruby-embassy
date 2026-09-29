@@ -167,11 +167,12 @@ class ScheduleItemTest < ActiveSupport::TestCase
   end
 
   test "upcoming_day_keys returns conference days on or after the given date" do
-    assert_equal %w[sun mon tue], ScheduleItem.upcoming_day_keys(Date.new(2026, 9, 26))
-    assert_equal %w[sun mon tue], ScheduleItem.upcoming_day_keys(Date.new(2026, 9, 27))
-    assert_equal %w[mon tue],     ScheduleItem.upcoming_day_keys(Date.new(2026, 9, 28))
-    assert_equal %w[tue],         ScheduleItem.upcoming_day_keys(Date.new(2026, 9, 29))
-    assert_equal [],              ScheduleItem.upcoming_day_keys(Date.new(2026, 9, 30))
+    assert_equal %w[sun mon tue wed], ScheduleItem.upcoming_day_keys(Date.new(2026, 9, 26))
+    assert_equal %w[sun mon tue wed], ScheduleItem.upcoming_day_keys(Date.new(2026, 9, 27))
+    assert_equal %w[mon tue wed],     ScheduleItem.upcoming_day_keys(Date.new(2026, 9, 28))
+    assert_equal %w[tue wed],         ScheduleItem.upcoming_day_keys(Date.new(2026, 9, 29))
+    assert_equal %w[wed],             ScheduleItem.upcoming_day_keys(Date.new(2026, 9, 30))
+    assert_equal [],                  ScheduleItem.upcoming_day_keys(Date.new(2026, 10, 1))
   end
 
   test "passed defaults to false" do

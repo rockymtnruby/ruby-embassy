@@ -35,15 +35,17 @@ class ScheduleItem < ApplicationRecord
   validate  :capacity_present_for_offered_modes, if: :embassy?
 
   DAY_META = {
-    "sun" => { label: "Sunday",  date: "September 27", subtitle: "Pre-Conference" },
-    "mon" => { label: "Monday",  date: "September 28", subtitle: "Conference Day 1" },
-    "tue" => { label: "Tuesday", date: "September 29", subtitle: "Conference Day 2" }
+    "sun" => { label: "Sunday",    date: "September 27", subtitle: "Pre-Conference" },
+    "mon" => { label: "Monday",    date: "September 28", subtitle: "Conference Day 1" },
+    "tue" => { label: "Tuesday",   date: "September 29", subtitle: "Conference Day 2" },
+    "wed" => { label: "Wednesday", date: "September 30", subtitle: "Conference Day 3" }
   }.freeze
 
   CONFERENCE_DATES = {
     "sun" => Date.new(2026, 9, 27),
     "mon" => Date.new(2026, 9, 28),
-    "tue" => Date.new(2026, 9, 29)
+    "tue" => Date.new(2026, 9, 29),
+    "wed" => Date.new(2026, 9, 30)
   }.freeze
   private_constant :CONFERENCE_DATES
 

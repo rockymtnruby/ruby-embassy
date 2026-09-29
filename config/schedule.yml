@@ -213,3 +213,9 @@
         :flexible: true
         :is_public: false
         :description: "Placeholder volunteer slot — not yet confirmed with organizers."
+
+  - :anchor: wed
+    :date: "September 30"
+    :label: "Wednesday"
+    :subtitle: "Conference Day 3"
+    :items: []
