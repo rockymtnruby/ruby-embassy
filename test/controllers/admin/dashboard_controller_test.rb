@@ -12,10 +12,15 @@ class Admin::DashboardControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
-  test "volunteer GET /admin returns 404" do
+  test "volunteer GET /admin returns 200 with Volunteer Dashboard and only the Swag tile" do
     sign_in_as users(:volunteer_one)
     get admin_root_path
-    assert_response :not_found
+    assert_response :success
+    assert_match "Volunteer Dashboard", response.body
+    assert_select "a[href=?]", admin_shirt_handoffs_path
+    assert_select "a[href=?]", admin_users_path, count: 0
+    assert_select "a[href=?]", admin_root_path, count: 0
+    assert_select ".stat-card", count: 0
   end
 
   test "admin GET /admin returns 200 and shows section links" do

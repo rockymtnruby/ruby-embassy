@@ -125,6 +125,8 @@ code {
 .flex { display: flex; }
 .hidden { display: none; }
 
+.flex-wrap { flex-wrap: wrap; }
+
 .flex-col { flex-direction: column; }
 
 .items-center { align-items: center; }
@@ -133,6 +135,7 @@ code {
 .justify-center { justify-content: center; }
 
 .shrink-0 { flex-shrink: 0; }
+.min-w-0 { min-width: 0; }
 
 .gap-x-3 { column-gap: 0.75rem; }
 .gap-x-4 { column-gap: 1rem; }
@@ -240,6 +243,7 @@ hr {
 
 @media (min-width: 768px) {
   .md\:block { display: block; }
+  .md\:flex { display: flex; }
   .md\:flex-row { flex-direction: row; }
   .md\:justify-between { justify-content: space-between; }
   .md\:items-center { align-items: center; }
@@ -1080,6 +1084,30 @@ hr {
 
 .input::placeholder { color: #9ca3af; }
 
+/* Search field with an overlaid ✕ that clears the query server-side
+   (works with zero JavaScript, unlike the native search-field ✕). */
+.search-wrap { position: relative; flex: 1 1 auto; min-width: 0; align-self: center; }
+.search-wrap .input { width: 100%; padding-right: 2.5rem; line-height: 1.5; }
+/* Match the search button to the input height (input uses 0.5rem padding +
+   a 1px border; .btn uses 0.625rem and no border, rendering ~6px taller). */
+.search-wrap + .btn {
+  padding: 0.5rem 1.25rem;
+  border: 1px solid transparent;
+  line-height: 1.5;
+  align-self: center;
+}
+.search-clear {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  font-size: 1.125rem;
+  line-height: 1;
+  text-decoration: none;
+  padding: 0.25rem;
+}
+
 
 /* ---------- Buttons --------------------------------------- */
 
@@ -1224,6 +1252,39 @@ hr {
 .badge-attendee {
   background: #f3f4f6;
   color: #374151;
+}
+
+.badge-size {
+  background: #374151;
+  color: #f3f4f6;
+}
+
+/* Ticket-type provenance badge. No text-transform so raw Tito release
+   titles ("Late Ticket (no t-shirt)") render verbatim. */
+.badge-ticket {
+  background: #eef2ff;
+  color: #3730a3;
+  text-transform: none;
+}
+
+.item-badge--pending {
+  background-color: #FEF3C7;
+  color: #8A5A00;
+}
+
+.item-badge--given {
+  background-color: #E6F4EC;
+  color: #1F6B45;
+}
+
+.item-badge--waitlist {
+  background-color: #DCEBF5;
+  color: #1E5A8A;
+}
+
+.item-badge--missed {
+  background-color: #FDE8E8;
+  color: #C41C1C;
 }
 
 

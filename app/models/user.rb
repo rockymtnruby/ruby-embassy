@@ -19,9 +19,11 @@ class User < ApplicationRecord
            foreign_key: :created_by_id,
            dependent: :nullify,
            inverse_of: :created_by
+  has_one :shirt_handoff, dependent: :destroy
 
   before_save :memorialize_tito_config
   after_create :materialize_default_plan_items
+  after_create :ensure_shirt_handoff
 
   generates_token_for :login, expires_in: 30.days
 
@@ -73,6 +75,19 @@ class User < ApplicationRecord
     ScheduleItem.default_plan.find_each do |item|
       plan_items.find_or_create_by!(schedule_item: item)
     end
+  end
+
+  # Every user gets exactly one swag row. Guarded so a re-run or a row
+  # created first by TitoSyncJob never violates the uniqueness constraint.
+  def ensure_shirt_handoff
+    create_shirt_handoff! unless shirt_handoff.present?
+  rescue ActiveRecord::RecordNotUnique
+    reload_shirt_handoff
+  end
+
+  def reload_shirt_handoff
+    association(:shirt_handoff).reset
+    shirt_handoff
   end
 
   # The most recent non-blank contact_method this user has used on any RSVP

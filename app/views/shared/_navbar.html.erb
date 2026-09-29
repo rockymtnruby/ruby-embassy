@@ -18,6 +18,8 @@
             <%= link_to "Annual Report", report_path, class: "text-blue px-3 py-1 text-lg font-medium" %>
             <% if admin? %>
               <%= link_to "Admin", admin_root_path, class: "text-blue px-3 py-1 text-lg font-medium" %>
+            <% elsif current_user&.volunteer? %>
+              <%= link_to "Volunteer", admin_root_path, class: "text-blue px-3 py-1 text-lg font-medium" %>
             <% end %>
             <%= button_to "Sign Out", session_path, method: :delete, class: "text-blue px-3 py-1 text-lg font-medium cursor-pointer" %>
           <% else %>
@@ -50,6 +52,8 @@
           <%= link_to "Annual Report", report_path, class: "text-blue block py-2 font-medium" %>
           <% if admin? %>
             <%= link_to "Admin", admin_root_path, class: "text-blue block py-2 font-medium" %>
+          <% elsif current_user&.volunteer? %>
+            <%= link_to "Volunteer", admin_root_path, class: "text-blue block py-2 font-medium" %>
           <% end %>
           <%= button_to "Sign Out", session_path, method: :delete, class: "text-blue block py-2 font-medium text-left cursor-pointer" %>
         <% else %>

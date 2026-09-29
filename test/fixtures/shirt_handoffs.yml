@@ -1,0 +1,4 @@
+<% %w[attendee_one volunteer_one jeremy katya].each do |fixture| %>
+<%= fixture %>:
+  user: <%= fixture %>
+<% end %>
