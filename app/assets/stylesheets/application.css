@@ -3361,7 +3361,9 @@ hr {
 }
 
 .speakers-list__item.is-dragging { opacity: 0.4; }
-.speakers-list__handle   { color: #c8cdd1; cursor: grab; user-select: none; }
+/* touch-action: none stops iOS from claiming the gesture as a page scroll so the
+   touch-drag path in sortable_controller.js can take over (see its preventDefault calls). */
+.speakers-list__handle   { color: #c8cdd1; cursor: grab; user-select: none; touch-action: none; }
 .speakers-list__position { font-weight: 600; color: #525C66; }
 .speakers-list__time     { color: #1F6B45; font-variant-numeric: tabular-nums; }
 .speakers-list__name     { font-weight: 500; color: #1f242a; }
