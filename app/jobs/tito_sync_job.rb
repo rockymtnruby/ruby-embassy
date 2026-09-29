@@ -48,7 +48,8 @@ class TitoSyncJob < ApplicationJob
     failed = 0
 
     User.tito_client.tickets.where(state: %w[complete]).each do |ticket|
-      role = role_for(release_titles[ticket.release_id])
+      release_title = release_titles[ticket.release_id]
+      role = role_for(release_title)
 
       if (user = slugs[ticket.slug])
         # This has to run here too, not just on connect/create below — most
@@ -70,14 +71,18 @@ class TitoSyncJob < ApplicationJob
           first_name: ticket.first_name,
           last_name: ticket.last_name,
           email: ticket.email,
-          role: role
+          role: role,
+          tito_release_title: release_title
         )
         added += 1
       end
+      # Release title is Tito ground truth (unlike size, which is
+      # attendee-provided), so latest wins — but only write when changed.
+      user.update!(tito_release_title: release_title) if release_title.present? && user.tito_release_title != release_title
       sync_shirt_handoff!(
         user,
         ticket_size: shirt_sizes[ticket.id],
-        waitlisted: waitlisted?(release_titles[ticket.release_id])
+        waitlisted: waitlisted?(release_title)
       )
     rescue StandardError => e
       # One malformed ticket shouldn't abort the whole run — count it and move on.

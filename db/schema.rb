@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_29_000000) do
+ActiveRecord::Schema[8.1].define(version: 2026_09_29_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -245,6 +245,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_29_000000) do
     t.boolean "role_set_by_admin", default: false, null: false
     t.string "tito_account_slug"
     t.string "tito_event_slug"
+    t.string "tito_release_title"
     t.string "tito_ticket_slug"
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_users_on_email", unique: true

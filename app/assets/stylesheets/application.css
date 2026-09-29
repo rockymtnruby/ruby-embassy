@@ -1259,6 +1259,14 @@ hr {
   color: #f3f4f6;
 }
 
+/* Ticket-type provenance badge. No text-transform so raw Tito release
+   titles ("Late Ticket (no t-shirt)") render verbatim. */
+.badge-ticket {
+  background: #eef2ff;
+  color: #3730a3;
+  text-transform: none;
+}
+
 .item-badge--pending {
   background-color: #FEF3C7;
   color: #8A5A00;

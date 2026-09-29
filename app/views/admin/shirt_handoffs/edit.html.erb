@@ -20,8 +20,10 @@
                 class: "space-y-4" do |f| %>
     <div>
       <%= f.label :size, class: "label" %>
+      <% size_options = ShirtHandoff::SIZES.dup %>
+      <% size_options |= [ @handoff.size ] if @handoff.size.present? %>
       <%= f.select :size,
-            [["No answer", ""]] + ShirtHandoff::SIZES.map { |s| [s, s] },
+            [["No answer", ""]] + size_options.map { |s| [s, s] },
             {}, class: "select" %>
     </div>
 

@@ -33,6 +33,16 @@ class Admin::ShirtHandoffsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match @user.full_name, response.body
   end
 
+  test "admin can filter by ticket type" do
+    @user.update!(tito_release_title: "Standard Ticket")
+    users(:volunteer_one).update!(tito_release_title: "Volunteer")
+
+    sign_in_as users(:jeremy)
+    get admin_shirt_handoffs_path, params: { release: [ "Volunteer" ] }
+    assert_match users(:volunteer_one).full_name, response.body
+    assert_no_match @user.full_name, response.body
+  end
+
   test "admin can mark given and undo" do
     sign_in_as users(:jeremy)
 
@@ -65,13 +75,15 @@ class Admin::ShirtHandoffsControllerTest < ActionDispatch::IntegrationTest
 
   test "export CSV respects the active filter" do
     @handoff.update!(status: :missed, note: "no-show")
+    @user.update!(tito_release_title: "Standard Ticket")
 
     sign_in_as users(:jeremy)
     get export_admin_shirt_handoffs_path, params: { status: "missed", format: :csv }
     assert_response :success
     assert_equal "text/csv", response.media_type
-    assert_match "name,email,size,status,note,given_at", response.body
+    assert_match "name,email,size,status,ticket_type,note,given_at", response.body
     assert_match @user.email, response.body
+    assert_match "Standard Ticket", response.body
     assert_no_match users(:volunteer_one).email, response.body
   end
 end

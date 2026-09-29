@@ -7,7 +7,7 @@
       Check off shirts as you hand them out. Late-ticket buyers start on the waitlist.
     </p>
   </div>
-  <%= link_to "Export CSV", export_admin_shirt_handoffs_path(q: @query, status: @status),
+  <%= link_to "Export CSV", export_admin_shirt_handoffs_path(q: @query, status: @status, release: @releases.presence),
         class: "btn btn-small btn-muted shrink-0" %>
 </div>
 
@@ -16,12 +16,15 @@
   <%= form_with url: admin_shirt_handoffs_path, method: :get, class: "flex gap-2",
         data: { turbo_frame: "swag_list" } do %>
     <%= hidden_field_tag :status, @status %>
+    <% @releases.each do |r| %>
+      <%= hidden_field_tag "release[]", r %>
+    <% end %>
     <div class="search-wrap">
       <%= text_field_tag :q, @query,
             placeholder: "Search name or email…",
             class: "input" %>
       <% if @query.present? %>
-        <%= link_to "✕", admin_shirt_handoffs_path(status: @status),
+        <%= link_to "✕", admin_shirt_handoffs_path(status: @status, release: @releases.presence),
               class: "search-clear", aria_label: "Clear search" %>
       <% end %>
     </div>
@@ -29,34 +32,69 @@
   <% end %>
 
   <nav class="hidden md:flex gap-2 flex-wrap mt-4" aria-label="Filter by status">
-    <%= link_to "All (#{@status_counts.values.sum})", admin_shirt_handoffs_path(q: @query),
+    <%= link_to "All (#{@status_counts.values.sum})", admin_shirt_handoffs_path(q: @query, release: @releases.presence),
           class: "btn btn-small #{@status.nil? ? 'btn-navy' : 'btn-muted'}",
           data: { turbo_frame: "swag_list" } %>
     <% ShirtHandoff.statuses.each_key do |s| %>
       <%= link_to "#{s.humanize} (#{@status_counts[s] || 0})",
-            admin_shirt_handoffs_path(q: @query, status: s),
+            admin_shirt_handoffs_path(q: @query, status: s, release: @releases.presence),
             class: "btn btn-small #{@status == s ? 'btn-navy' : 'btn-muted'}",
             data: { turbo_frame: "swag_list" } %>
     <% end %>
   </nav>
 
-  <div class="hidden md:flex gap-2 flex-wrap mb-4 text-sm mt-4">
-    <% ShirtHandoff::SIZES.each do |size| %>
-      <span class="badge badge-attendee">
-        <%= size %> · <%= @size_counts[[size, "pending"]] || 0 %> left · <%= @size_counts[[size, "given"]] || 0 %> given
-      </span>
-    <% end %>
-    <% unknown = (@size_counts.select { |(size, _), _| size.blank? }.values.sum) %>
-    <% if unknown.positive? %>
-      <span class="badge badge-attendee">no size · <%= unknown %></span>
-    <% end %>
-  </div>
+  <% if @release_options.any? %>
+    <nav class="hidden md:flex gap-2 flex-wrap items-center mt-4" aria-label="Filter by ticket type">
+      <span class="text-gray text-sm">Ticket type:</span>
+      <% @release_options.each do |title| %>
+        <% selected = @releases.include?(title) %>
+        <% toggled = selected ? (@releases - [ title ]) : (@releases + [ title ]) %>
+        <%= link_to "#{title} (#{@release_counts[title] || 0})",
+              admin_shirt_handoffs_path(q: @query, status: @status, release: toggled.presence),
+              class: "btn btn-small #{selected ? 'btn-navy' : 'btn-muted'}",
+              data: { turbo_frame: "swag_list" } %>
+      <% end %>
+      <% if @releases.any? %>
+        <%= link_to "Clear", admin_shirt_handoffs_path(q: @query, status: @status),
+              class: "text-blue underline text-sm", data: { turbo_frame: "swag_list" } %>
+      <% end %>
+    </nav>
+  <% end %>
+
+  <details class="hidden md:block mt-4 text-sm" style="max-width: 26rem;">
+    <summary class="text-gray" style="cursor: pointer;">
+      Inventory: <%= @inventory_total_left %> to hand out · <%= @inventory_total_given %> given<%= " · #{@inventory_no_size} no size" if @inventory_no_size.positive? %>
+    </summary>
+    <table class="table mt-2">
+      <thead>
+        <tr>
+          <th>Size</th>
+          <th>To hand out</th>
+          <th>Given</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @inventory_rows.each do |size, left, given| %>
+          <tr>
+            <td><%= size %></td>
+            <td><%= left %></td>
+            <td><%= given %></td>
+          </tr>
+        <% end %>
+        <tr>
+          <td><strong>Total</strong></td>
+          <td><strong><%= @inventory_total_left %></strong></td>
+          <td><strong><%= @inventory_total_given %></strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </details>
 
 <% if @handoffs.empty? %>
   <div class="card text-muted">
-    <% if @query.present? || @status.present? %>
+    <% if @query.present? || @status.present? || @releases.any? %>
       No matches for "<%= @query %>".
-      <%= link_to "Clear search", admin_shirt_handoffs_path(status: @status), class: "text-blue underline" %>
+      <%= link_to "Clear search", admin_shirt_handoffs_path(status: @status, release: @releases.presence), class: "text-blue underline" %>
     <% else %>
       No swag records yet.
     <% end %>
@@ -71,24 +109,27 @@
           <span class="item-badge item-badge--<%= handoff.status %> shrink-0"><%= handoff.status.humanize %></span>
         </div>
         <div class="text-gray text-sm truncate"><%= user.email %></div>
-        <div class="flex gap-2 mt-2 items-center">
+        <div class="flex gap-2 mt-2 items-center flex-wrap">
           <span class="badge badge-size"><%= handoff.size.presence || "—" %></span>
           <span class="badge badge-<%= user.role %>"><%= user.role.humanize %></span>
+          <% if user.tito_release_title.present? %>
+            <span class="badge badge-ticket"><%= user.tito_release_title %></span>
+          <% end %>
         </div>
         <% if handoff.note.present? %>
           <p class="text-gray text-sm mt-2"><%= handoff.note %></p>
         <% end %>
         <div class="flex gap-2 mt-3">
           <% if handoff.given? %>
-            <%= button_to "Undo", unmark_admin_shirt_handoff_path(handoff, q: @query, status: @status),
+            <%= button_to "Undo", unmark_admin_shirt_handoff_path(handoff, q: @query, status: @status, release: @releases.presence),
                   method: :patch, class: "btn btn-muted btn-full",
                   form: { class: "flex-1", data: { turbo_frame: "swag_list" } } %>
           <% else %>
-            <%= button_to "Mark given", mark_given_admin_shirt_handoff_path(handoff, q: @query, status: @status),
+            <%= button_to "Mark given", mark_given_admin_shirt_handoff_path(handoff, q: @query, status: @status, release: @releases.presence),
                   method: :patch, class: "btn btn-navy btn-full",
                   form: { class: "flex-1", data: { turbo_frame: "swag_list" } } %>
           <% end %>
-          <%= link_to "Edit", edit_admin_shirt_handoff_path(handoff, q: @query, status: @status),
+          <%= link_to "Edit", edit_admin_shirt_handoff_path(handoff, q: @query, status: @status, release: @releases.presence),
                 class: "btn btn-muted flex-1 text-center", data: { turbo_frame: "_top" } %>
         </div>
       </div>

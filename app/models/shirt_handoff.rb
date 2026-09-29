@@ -3,7 +3,16 @@ class ShirtHandoff < ApplicationRecord
 
   enum :status, { pending: 0, given: 1, waitlist: 2, missed: 3 }
 
-  SIZES = %w[XS S M L XL 2XL 3XL].freeze
+  # Must mirror the Tito "What is your t-shirt size?" answers verbatim —
+  # the sync stores raw responses and the edit form offers exactly these.
+  SIZES = [
+    "Small", "Small - Women",
+    "Medium", "Medium - Women",
+    "Large", "Large - Women",
+    "XL", "XL - Women",
+    "2XL", "2XL - Women",
+    "3XL", "4XL"
+  ].freeze
 
   validates :user_id, uniqueness: true
 

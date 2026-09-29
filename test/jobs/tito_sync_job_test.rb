@@ -204,6 +204,18 @@ class TitoSyncJobTest < ActiveJob::TestCase
     assert_equal "pending", User.find_by(email: "std@example.com").shirt_handoff.status
   end
 
+  test "sync stores the ticket release title and refreshes it when changed" do
+    releases = [ FakeRelease.new(1, "Standard Ticket") ]
+    tickets = [ FakeTicket.new("rel-slug", "rel@example.com", "Rel", "One", 1, 501) ]
+
+    with_fake_tito_client(tickets, releases: releases) { TitoSyncJob.perform_now }
+    assert_equal "Standard Ticket", User.find_by(email: "rel@example.com").tito_release_title
+
+    renamed = [ FakeRelease.new(1, "Standard Ticket (Early Bird)") ]
+    with_fake_tito_client(tickets, releases: renamed) { TitoSyncJob.perform_now }
+    assert_equal "Standard Ticket (Early Bird)", User.find_by(email: "rel@example.com").tito_release_title
+  end
+
   test "re-sync moves a pre-existing pending handoff to waitlist for late tickets" do
     user = users(:attendee_one)
     user.update!(tito_ticket_slug: "linked-slug")
