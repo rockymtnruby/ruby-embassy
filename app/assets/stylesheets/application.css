@@ -3376,6 +3376,30 @@ hr {
 .speakers-list__slides a        { color: #C41C1C; font-weight: 600; text-decoration: underline; white-space: nowrap; }
 .speakers-list__slides--missing { color: #9aa1a8; font-style: italic; font-size: 0.875rem; white-space: nowrap; }
 
+/* Narrow screens: the 7-column grid overflows the viewport, so reflow each
+   row into wrapped lines (identity / title / actions) with truncation.
+   Desktop grid above is untouched. */
+@media (max-width: 767px) {
+  .speakers-list__item { display: flex; flex-wrap: wrap; row-gap: 0.25rem; }
+  .speakers-list__handle { align-self: stretch; display: flex; align-items: center; }
+  .speakers-list__time { white-space: nowrap; }
+  .speakers-list__name {
+    flex: 1 1 0;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .speakers-list__title {
+    flex: 1 1 100%;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .speakers-list__slides { margin-left: auto; }
+}
+
 .btn-small { padding: 0.25rem 0.625rem; font-size: 0.8125rem; }
 
 /* ---------- Meal-spot transport form: hide passenger seats unless driving --- */
