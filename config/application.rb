@@ -1,6 +1,23 @@
 require_relative "boot"
 
-require "rails/all"
+# Selective framework requires instead of `rails/all` (2026-10 memory trim).
+# Excluded and commented (not deleted) so they can be restored with one uncomment:
+# - active_storage/engine: no attachments anywhere (no has_one_attached, no
+#   active_storage_* tables, no file inputs — lightning talks use a slides URL).
+#   If uploads are ever added, restore this AND the active_storage.service lines
+#   in config/environments/*.rb AND the image_processing gem.
+# - action_mailbox/engine, action_text/engine: no inbound email, no rich text.
+require "active_model/railtie"
+require "active_job/railtie"
+require "active_record/railtie"
+# require "active_storage/engine"
+require "action_controller/railtie"
+require "action_mailer/railtie"
+require "action_view/railtie"
+require "action_cable/engine"
+# require "action_mailbox/engine"
+# require "action_text/engine"
+require "rails/test_unit/railtie"
 
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.

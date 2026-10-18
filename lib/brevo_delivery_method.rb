@@ -2,6 +2,11 @@
 #
 # Registered via ActionMailer::Base.add_delivery_method in
 # config/environments/production.rb, selected via MAIL_PROVIDER=brevo.
+#
+# Explicit require: the brevo gem is `require: false` in the Gemfile (memory
+# trim — only loaded on the brevo mail path, never at boot).
+require "brevo"
+
 class BrevoDeliveryMethod
   attr_accessor :settings
 

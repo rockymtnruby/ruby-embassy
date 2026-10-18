@@ -17,6 +17,8 @@ Rails.application.routes.draw do
   # Admin area
   namespace :admin do
     root "dashboard#show"
+    # One-off queue housekeeping (Clear-finished button on /admin/jobs).
+    post "maintenance/clear_finished_jobs", to: "maintenance#clear_finished_jobs", as: :clear_finished_jobs
     resources :users do
       post :sync, on: :collection
     end

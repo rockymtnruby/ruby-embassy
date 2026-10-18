@@ -19,7 +19,10 @@ gem "turbo-rails"
 # Hotwire's modest JavaScript framework [https://stimulus.hotwired.dev]
 gem "stimulus-rails"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
-gem "jbuilder"
+# Commented out 2026-10 (memory trim): no .jbuilder views and no Jbuilder
+# constant usage — controllers render HTML/Turbo via respond_to. Restore if a
+# JSON API is added.
+# gem "jbuilder"
 
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"
@@ -43,7 +46,10 @@ gem "kamal", require: false
 gem "thruster", require: false
 
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
-gem "image_processing", "~> 1.2"
+# Commented out 2026-10 (memory trim): no attachments anywhere in the app
+# (no has_one_attached/has_many_attached, no active_storage_* tables, no file
+# inputs — lightning talks use a slides URL string). Restore if uploads are added.
+# gem "image_processing", "~> 1.2"
 
 # Tito API client for event registration lookup
 gem "tito_ruby"
@@ -54,11 +60,16 @@ gem "postmark-rails"
 # Brevo for backup transactional email. Its API client is used instead of an
 # SMTP delivery method because Brevo's SMTP relay requires a separate,
 # support-activated gate on new accounts that the API doesn't have.
-gem "brevo"
+# require: false 2026-10 (memory trim): only loaded when MAIL_PROVIDER=brevo,
+# via explicit require in lib/brevo_delivery_method.rb.
+gem "brevo", require: false
 
 # PDF generation for the passport application form
-gem "prawn"
-gem "prawn-table"
+# require: false 2026-10 (memory trim): both PDF services self-require
+# ("prawn" / "prawn/table" at the top of each file), so boot skips ~20-40MB
+# until a PDF is actually rendered.
+gem "prawn", require: false
+gem "prawn-table", require: false
 
 group :development, :test do
   gem "dotenv-rails"
