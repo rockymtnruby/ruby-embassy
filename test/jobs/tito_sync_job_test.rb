@@ -40,10 +40,14 @@ class TitoSyncJobTest < ActiveJob::TestCase
 
   def with_fake_tito_client(tickets, releases: [], questions: [])
     fake_client = FakeTitoClient.new(tickets, releases, questions)
+    # Capture-and-restore (NOT remove_method: the real method also lives on the
+    # singleton class, so removing deletes it permanently for every test after
+    # this one in the same worker).
+    original = User.method(:tito_client)
     User.define_singleton_method(:tito_client) { fake_client }
     yield
   ensure
-    User.singleton_class.send(:remove_method, :tito_client)
+    User.define_singleton_method(:tito_client, original)
   end
 
   test "counts already-linked, connects by email, and creates new users" do
@@ -180,15 +184,18 @@ class TitoSyncJobTest < ActiveJob::TestCase
   end
 
   test "a fatal error writes a failed status" do
+    original = User.method(:tito_client)
     User.define_singleton_method(:tito_client) { raise "boom: unreachable" }
 
-    TitoSyncJob.perform_now
+    begin
+      TitoSyncJob.perform_now
 
-    status = TitoSyncJob.status
-    assert_equal :failed, status[:state]
-    assert_match "boom: unreachable", status[:error]
-  ensure
-    User.singleton_class.send(:remove_method, :tito_client)
+      status = TitoSyncJob.status
+      assert_equal :failed, status[:state]
+      assert_match "boom: unreachable", status[:error]
+    ensure
+      User.define_singleton_method(:tito_client, original)
+    end
   end
 
   test "a late-ticket buyer gets a waitlist handoff, others get pending" do
