@@ -37,6 +37,15 @@ plugin :tmp_restart
 # Run the Solid Queue supervisor inside of Puma for single-server deployments.
 plugin :solid_queue if ENV["SOLID_QUEUE_IN_PUMA"] || Rails.env.development?
 
+# Async (threaded) supervisor mode: dispatcher + worker run as threads inside
+# this Puma process instead of forking a supervisor + dispatcher + worker (+
+# scheduler) copy of the whole app. 2026-10 memory trim: fork mode showed up as
+# 4 extra ~170MB processes; async collapses them to threads in one process.
+# NOTE: Solid Queue validates the queue DB pool >= worker threads + 2 (currently
+# 3 + 2 = 5). database.yml derives pool from RAILS_MAX_THREADS (default 5), so
+# the unset default exactly satisfies it — anything below 5 (2/3/4) crashes boot.
+solid_queue_mode :async
+
 # Specify the PID file. Defaults to tmp/pids/server.pid in development.
 # In other environments, only set the PID file if requested.
 pidfile ENV["PIDFILE"] if ENV["PIDFILE"]

@@ -10,6 +10,12 @@
 #     schedule: at 5am every day
 
 production:
-  clear_solid_queue_finished_jobs:
-    command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
-    schedule: every hour at minute 12
+  # Commented out 2026-10: finished-jobs cleanup is now on-demand via the
+  # "Clear finished jobs" button on /admin/jobs (Admin::MaintenanceController#clear).
+  # Keeping this commented (not deleted) so it can be restored with one uncomment.
+  # While no recurring tasks are configured, Solid Queue skips forking its
+  # scheduler process (~170MB RSS saved). Clean up manually about monthly —
+  # post-event volume is a handful of rows a week.
+  # clear_solid_queue_finished_jobs:
+  #   command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
+  #   schedule: every hour at minute 12
